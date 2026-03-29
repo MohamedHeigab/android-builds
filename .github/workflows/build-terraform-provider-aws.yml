@@ -1,0 +1,52 @@
+name: Build Terraform Provider AWS for Android ARM64
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+  schedule:
+    - cron: '0 0 * * 0' # Automatically run once a week
+
+jobs:
+  build:
+    name: Compile Terraform Provider AWS for Android (ARM64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Terraform Provider AWS repository
+        uses: actions/checkout@v4
+        with:
+          repository: hashicorp/terraform-provider-aws
+          
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable' # The AWS provider uses newer Go versions, stable is best
+          check-latest: true
+
+      - name: Configure Android NDK toolchain
+        run: |
+          # Use the pre-installed NDK on GitHub-hosted Ubuntu runners
+          NDK_TOOLCHAIN_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
+
+      - name: Build Terraform Provider AWS
+        env:
+          CGO_ENABLED: 1
+          GOOS: android
+          GOARCH: arm64
+          CC: aarch64-linux-android21-clang
+        run: |
+          # The main entrypoint for Terraform providers is usually the root directory
+          go build -v -trimpath -ldflags="-s -w" -o terraform-provider-aws-android-arm64 .
+          
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-provider-aws-android-arm64
+          path: terraform-provider-aws-android-arm64
+          if-no-files-found: error

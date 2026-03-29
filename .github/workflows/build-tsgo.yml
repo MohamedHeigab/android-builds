@@ -1,0 +1,56 @@
+name: Build tsgo for Android ARM64
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+  schedule:
+    - cron: '0 0 * * 0' # Automatically run once a week to stay up to date
+
+jobs:
+  build:
+    name: Compile for Android (ARM64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout typescript-go repository
+        uses: actions/checkout@v4
+        with:
+          repository: microsoft/typescript-go
+          
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          check-latest: true
+
+      - name: Configure Android NDK toolchain
+        run: |
+          # Use the pre-installed NDK on GitHub-hosted Ubuntu runners.
+          # This avoids the slow process of downloading and extracting the 1GB+ NDK.
+          NDK_TOOLCHAIN_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
+
+      - name: Build tsgo
+        working-directory: cmd/tsgo
+        env:
+          CGO_ENABLED: 1
+          GOOS: android
+          GOARCH: arm64
+          CC: aarch64-linux-android21-clang
+        run: |
+          # Build with optimizations for production:
+          # -trimpath: removes absolute filesystem paths from the binary
+          # -ldflags="-s -w": strips debugging information to reduce binary size
+          go build -v -trimpath -ldflags="-s -w" -o tsgo-android-arm64 .
+          
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsgo-android-arm64
+          path: cmd/tsgo/tsgo-android-arm64
+          if-no-files-found: error
