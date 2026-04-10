@@ -50,6 +50,9 @@ jobs:
         run: |
           cargo build --release --target aarch64-linux-android
           
+          # Strip debug symbols to drastically reduce the binary size
+          $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip target/aarch64-linux-android/release/rustfs
+          
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
