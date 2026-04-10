@@ -38,6 +38,10 @@ jobs:
           echo "CC_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang" >> $GITHUB_ENV
           echo "CXX_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++" >> $GITHUB_ENV
           echo "AR_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/llvm-ranlib" >> $GITHUB_ENV
+          
+          # Add the NDK bin directory to the PATH so build scripts can find other tools
+          echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
       - name: Patch Cargo.toml for Android CLI compatibility
         run: |
