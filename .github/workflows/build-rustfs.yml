@@ -41,10 +41,10 @@ jobs:
 
       - name: Patch Cargo.toml for Android CLI compatibility
         run: |
-          # Replace 'rustls' (which implies platform-verifier on Android) with 'rustls-tls-webpki-roots'
-          # to allow the binary to run as a standalone CLI (e.g., in Termux) without an Android JNI Context.
-          sed -i 's/"rustls"/"rustls-tls-webpki-roots"/g' Cargo.toml
-          sed -i 's/"reqwest-rustls"/"reqwest-rustls-webpki-roots"/g' Cargo.toml
+          # Replace 'rustls' with 'native-tls-vendored' to avoid 'rustls-platform-verifier'
+          # which panics on Android when run without a JNI context (e.g. in Termux).
+          sed -i 's/"rustls"/"native-tls-vendored"/g' Cargo.toml
+          sed -i 's/"reqwest-rustls"/"reqwest-client"/g' Cargo.toml
 
       - name: Build RustFS
         run: |
