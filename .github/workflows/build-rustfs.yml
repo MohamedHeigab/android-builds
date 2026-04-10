@@ -44,7 +44,7 @@ jobs:
           # Replace 'rustls' (which implies platform-verifier on Android) with 'rustls-tls-webpki-roots'
           # to allow the binary to run as a standalone CLI (e.g., in Termux) without an Android JNI Context.
           sed -i 's/"rustls"/"rustls-tls-webpki-roots"/g' Cargo.toml
-          sed -i 's/"reqwest-rustls"/"reqwest-webpki-roots"/g' Cargo.toml
+          sed -i 's/"reqwest-rustls"/"reqwest-rustls-webpki-roots"/g' Cargo.toml
 
       - name: Build RustFS
         run: |
