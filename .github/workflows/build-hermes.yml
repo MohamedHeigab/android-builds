@@ -44,18 +44,17 @@ jobs:
             -DHERMES_UNICODE_LITE=ON \
             -DICU_FOUND=1 \
             -DIMPORT_HOST_COMPILERS=$PWD/build_host/ImportHostCompilers.cmake \
-            -DHERMES_ENABLE_DEBUGGER=OFF \
             -DANDROID_ABI=arm64-v8a \
             -G Ninja
             
           cmake --build ./build_android
           
-          # Strip debug symbols to drastically reduce the binary size
-          $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip build_android/bin/hermes
+          # Strip debug symbols from all binaries to drastically reduce size
+          find build_android/bin -maxdepth 1 -type f -executable -exec $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip {} +
           
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: hermes-android-arm64
-          path: build_android/bin/hermes
+          path: build_android/bin/
           if-no-files-found: error
