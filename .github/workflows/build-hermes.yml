@@ -1,0 +1,61 @@
+name: Build Hermes for Android ARM64
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+  schedule:
+    - cron: '0 0 * * 0' # Automatically run once a week to stay up to date
+
+jobs:
+  build:
+    name: Compile Hermes for Android (ARM64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Hermes repository
+        uses: actions/checkout@v4
+        with:
+          repository: facebook/hermes
+          ref: static_h
+          
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake git ninja-build python3 libicu-dev libreadline-dev
+
+      - name: Build Hermes (Host)
+        run: |
+          # A host build is required to generate the ImportHostCompilers.cmake file
+          # which is necessary for compiling InternalBytecode when cross-compiling.
+          cmake -S . -B build_host -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build ./build_host
+
+      - name: Build Hermes (Android ARM64)
+        run: |
+          cmake -S . -B build_android \
+            -DHERMES_FACEBOOK_BUILD=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake \
+            -DHERMES_UNICODE_LITE=ON \
+            -DICU_FOUND=1 \
+            -DIMPORT_HOST_COMPILERS=$PWD/build_host/ImportHostCompilers.cmake \
+            -DHERMES_ENABLE_DEBUGGER=OFF \
+            -DANDROID_ABI=arm64-v8a \
+            -G Ninja
+            
+          cmake --build ./build_android
+          
+          # Strip debug symbols to drastically reduce the binary size
+          $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip build_android/bin/hermes
+          
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-android-arm64
+          path: build_android/bin/hermes
+          if-no-files-found: error
