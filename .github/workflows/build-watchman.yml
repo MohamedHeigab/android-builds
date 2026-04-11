@@ -1,0 +1,65 @@
+name: Build Watchman for Android ARM64
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+  schedule:
+    - cron: '0 0 * * 0' # Automatically run once a week
+
+jobs:
+  build:
+    name: Compile Watchman for Android (ARM64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Watchman repository
+        uses: actions/checkout@v4
+        with:
+          repository: facebook/watchman
+          
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake git ninja-build python3 build-essential pkg-config libssl-dev
+
+      - name: Configure Android NDK toolchain
+        run: |
+          # Use the pre-installed NDK on GitHub-hosted Ubuntu runners
+          NDK_TOOLCHAIN_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          
+          # Inform Cargo about the Android linker and C compiler wrapper
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang" >> $GITHUB_ENV
+          echo "CC_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang" >> $GITHUB_ENV
+          echo "CXX_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++" >> $GITHUB_ENV
+          echo "AR_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/llvm-ranlib" >> $GITHUB_ENV
+          
+          # Add the NDK bin directory to the PATH so build scripts can find other tools
+          echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
+
+      - name: Build Watchman (Android ARM64)
+        run: |
+          # Watchman uses getdeps.py to orchestrate building its dependencies and itself
+          python3 ./build/fbcode_builder/getdeps.py build watchman \
+            --android \
+            --android-ndk $ANDROID_NDK_LATEST_HOME
+            
+          # Find and strip the built watchman binary
+          find . -name watchman -type f -executable -path "*/installed/watchman/bin/watchman" -exec sh -c '$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip "$1" || true' _ {} \; || true
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchman-android-arm64
+          path: "**/installed/watchman/bin/watchman"
+          if-no-files-found: warn
