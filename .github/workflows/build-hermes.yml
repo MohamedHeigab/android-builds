@@ -50,7 +50,7 @@ jobs:
           cmake --build ./build_android
           
           # Strip debug symbols from all binaries to drastically reduce size
-          find build_android/bin -maxdepth 1 -type f -executable -exec $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip {} +
+          find build_android/bin -maxdepth 1 -type f -executable -exec sh -c '$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip "$1" || true' _ {} \;
           
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
