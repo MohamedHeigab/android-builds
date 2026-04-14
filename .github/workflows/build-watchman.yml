@@ -53,6 +53,9 @@ jobs:
           # Add the NDK bin directory to the PATH so build scripts can find other tools
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
+      - name: Patch libsodium manifest for cross-compilation
+        run: echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libsodium
+
       - name: Build Watchman (Android ARM64)
         run: |
           # Watchman uses getdeps.py to orchestrate building its dependencies and itself
