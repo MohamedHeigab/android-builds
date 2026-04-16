@@ -56,6 +56,8 @@ jobs:
       - name: Patch manifests for cross-compilation
         run: |
           echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libsodium
+          echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/xz
+          echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libiberty
           sed -i '/libunwind/d' ./build/fbcode_builder/manifests/folly
 
       - name: Build Watchman (Android ARM64)
