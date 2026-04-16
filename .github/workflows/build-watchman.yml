@@ -60,8 +60,16 @@ jobs:
           echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libiberty
           sed -i '/libunwind/d' ./build/fbcode_builder/manifests/folly
           sed -i '/\[dependencies\]/a openssl' ./build/fbcode_builder/manifests/folly
-          sed -i '/\[build.any(os=linux, os=freebsd)\]/,/builder = nop/d' ./build/fbcode_builder/manifests/openssl
-          sed -i 's/\[build.not(any(os=linux, os=freebsd))\]/\[build\]/' ./build/fbcode_builder/manifests/openssl
+          cat << 'EOF' > ./build/fbcode_builder/manifests/openssl
+          [manifest]
+          name = openssl
+          [download]
+          url = https://www.openssl.org/source/openssl-3.0.15.tar.gz
+          sha256 = 23c666d0edf20f14249b3d8f0368acaee9ab585b09e1de82107c66e1f3ec9533
+          [build]
+          builder = openssl
+          subdir = openssl-3.0.15
+          EOF
 
       - name: Build Watchman (Android ARM64)
         run: |
