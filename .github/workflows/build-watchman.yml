@@ -59,6 +59,7 @@ jobs:
           echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/xz
           echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libiberty
           sed -i '/libunwind/d' ./build/fbcode_builder/manifests/folly
+          sed -i '/\[dependencies\]/a openssl' ./build/fbcode_builder/manifests/folly
           sed -i '/\[build.any(os=linux, os=freebsd)\]/,/builder = nop/d' ./build/fbcode_builder/manifests/openssl
           sed -i 's/\[build.not(any(os=linux, os=freebsd))\]/\[build\]/' ./build/fbcode_builder/manifests/openssl
 
