@@ -63,10 +63,6 @@ jobs:
           sed -i '/\[dependencies\]/a openssl' ./build/fbcode_builder/manifests/folly
           sed -i '/fbthrift/d' ./build/fbcode_builder/manifests/watchman
           sed -i '/fb303/d' ./build/fbcode_builder/manifests/watchman
-          sed -i '/edencommon/d' ./build/fbcode_builder/manifests/watchman
-          sed -i '/find_package(edencommon CONFIG REQUIRED)/d' CMakeLists.txt
-          sed -i '/edencommon::edencommon_utils/d' CMakeLists.txt
-          sed -i '/edencommon::edencommon_telemetry/d' CMakeLists.txt
           sed -i '/fb303::fb303/d' CMakeLists.txt
           cat << 'EOF' > ./build/fbcode_builder/manifests/openssl
           [manifest]
