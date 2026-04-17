@@ -49,6 +49,7 @@ jobs:
           echo "CXX=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++" >> $GITHUB_ENV
           echo "AR=$NDK_TOOLCHAIN_BIN/llvm-ar" >> $GITHUB_ENV
           echo "RANLIB=$NDK_TOOLCHAIN_BIN/llvm-ranlib" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
           
           # Add the NDK bin directory to the PATH so build scripts can find other tools
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
@@ -70,6 +71,7 @@ jobs:
           builder = openssl
           subdir = openssl-3.0.15
           EOF
+          sed -i 's/\["linux-x86_64"\] if not self.build_opts.is_arm() else \["linux-aarch64"\]/\["android-arm64"\]/' ./build/fbcode_builder/getdeps/builder.py
 
       - name: Build Watchman (Android ARM64)
         run: |
