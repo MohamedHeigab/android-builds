@@ -37,7 +37,46 @@ jobs:
           # Use the pre-installed NDK on GitHub-hosted Ubuntu runners
           NDK_TOOLCHAIN_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           
+          mkdir -p $GITHUB_WORKSPACE/ndk-bin
+          ln -s $NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang $GITHUB_WORKSPACE/ndk-bin/aarch64-linux-android-clang
+          ln -s $NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang $GITHUB_WORKSPACE/ndk-bin/aarch64-linux-android-gcc
+          ln -s $NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++ $GITHUB_WORKSPACE/ndk-bin/aarch64-linux-android-clang++
+          ln -s $NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++ $GITHUB_WORKSPACE/ndk-bin/aarch64-linux-android-g++
+          echo "$GITHUB_WORKSPACE/ndk-bin" >> $GITHUB_PATH
+          
           # Inform Cargo about the Android linker and C compiler wrapper
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang" >> $GITHUB_ENV
+          echo "CC_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang" >> $GITHUB_ENV
+          echo "CXX_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++" >> $GITHUB_ENV
+          echo "AR_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_aarch64_linux_android=$NDK_TOOLCHAIN_BIN/llvm-ranlib" >> $GITHUB_ENV
+          
+          # Set global compiler variables so build systems like Boost's b2 pick them up
+          echo "CC=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang" >> $GITHUB_ENV
+          echo "CXX=$NDK_TOOLCHAIN_BIN/aarch64-linux-android24-clang++" >> $GITHUB_ENV
+          echo "AR=$NDK_TOOLCHAIN_BIN/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB=$NDK_TOOLCHAIN_BIN/llvm-ranlib" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
+          
+          # Add the NDK bin directory to the PATH so build scripts can find other tools
+          echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
+
+      - name: Patch manifests for cross-compilation
+        run: |
+          echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libsodium
+          echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/xz
+          echo "--host=aarch64-linux-android" >> ./build/fbcode_builder/manifests/libiberty
+          sed -i '/libunwind/d' ./build/fbcode_builder/manifests/folly
+          sed -i '/\[dependencies\]/a openssl' ./build/fbcode_builder/manifests/folly
+          sed -i '/fbthrift/d' ./build/fbcode_builder/manifests/watchman
+          sed -i '/fb303/d' ./build/fbcode_builder/manifests/watchman
+          sed -i '/fb303::fb303/d' CMakeLists.txt
+          sed -i '/edencommon::edencommon_telemetry/d' CMakeLists.txt
+          sed -i '/fbthrift/d' ./build/fbcode_builder/manifests/edencommon
+          sed -i '/fb303/d' ./build/fbcode_builder/manifests/edencommon
+          sed -i '/wangle/d' ./build/fbcode_builder/manifests/edencommon
+          sed -i '/mvfst/d' ./build/fbcode_builder/manifests/edencommon
+          sed -i '/fizz/d' ./build/fbcode_builder/manifests/edencommon
           echo "ZGlmZiAtLWdpdCBhL0NNYWtlTGlzdHMudHh0IGIvQ01ha2VMaXN0cy50eHQKaW5kZXggOGIzYTc1ZS4uZjUwZDU4NSAxMDA2NDQKLS0tIGEvQ01ha2VMaXN0cy50eHQKKysrIGIvQ01ha2VMaXN0cy50eHQKQEAgLTU5LDIzICs1OSw4IEBAIGluY2x1ZGVfZGlyZWN0b3JpZXMoJHtHRkxBR1NfSU5DTFVERV9ESVJ9KQogZmluZF9wYWNrYWdlKGZvbGx5IENPTkZJRyBSRVFVSVJFRCkKIGluY2x1ZGVfZGlyZWN0b3JpZXMoJHtGT0xMWV9JTkNMVURFX0RJUn0pCiAKLWZpbmRfcGFja2FnZShmYjMwMyBDT05GSUcgUkVRVUlSRUQpCi1pbmNsdWRlX2RpcmVjdG9yaWVzKCR7RkIzMDNfSU5DTFVERV9ESVJ9KQotCi1maW5kX3BhY2thZ2Uod2FuZ2xlIENPTkZJRyBSRVFVSVJFRCkKLWluY2x1ZGVfZGlyZWN0b3JpZXMoJHtXQU5HTEVfSU5DTFVERV9ESVJ9KQotCi1maW5kX3BhY2thZ2UoRkJUaHJpZnQgQ09ORklHIFJFUVVJUkVEIENPTVBPTkVOVFMgY3BwMiBweSkKLWluY2x1ZGVfZGlyZWN0b3JpZXMoJHtGQlRIUklGVF9JTkNMVURFX0RJUn0pCi0KLWZpbmRfcGFja2FnZShHTW9jayBNT0RVTEUgUkVRVUlSRUQpCi1pbmNsdWRlX2RpcmVjdG9yaWVzKCR7R01PQ0tfSU5DTFVERURJUn0gJHtMSUJHTU9DS19JTkNMVURFX0RJUn0pCi1pbmNsdWRlKEdvb2dsZVRlc3QpCi1lbmFibGVfdGVzdGluZygpCiAKIGFkZF9zdWJkaXJlY3RvcnkoZWRlbi9jb21tb24vb3MpCi1hZGRfc3ViZGlyZWN0b3J5KGVkZW4vY29tbW9uL3RlbGVtZXRyeSkKLWFkZF9zdWJkaXJlY3RvcnkoZWRlbi9jb21tb24vdGVzdGhhcm5lc3MpCiBhZGRfc3ViZGlyZWN0b3J5KGVkZW4vY29tbW9uL3V0aWxzKQogCiBjb25maWd1cmVfZmlsZSgK" | base64 -d > ./build/fbcode_builder/patches/edencommon.patch
           sed -i '/\[build\]/a patchfile = edencommon.patch' ./build/fbcode_builder/manifests/edencommon
           cat << 'EOF' > ./build/fbcode_builder/manifests/openssl
