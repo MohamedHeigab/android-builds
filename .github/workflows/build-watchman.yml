@@ -62,6 +62,7 @@ jobs:
           sed -i '/fb303/d' ./build/fbcode_builder/manifests/watchman
           sed -i '/fbthrift/d' ./build/fbcode_builder/manifests/edencommon
           sed -i '/fb303/d' ./build/fbcode_builder/manifests/edencommon
+          sed -i '/\[dependencies\]/a googletest' ./build/fbcode_builder/manifests/edencommon
 
       - name: Build Watchman (Android ARM64)
         run: |
