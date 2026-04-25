@@ -44,6 +44,8 @@ jobs:
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
           mkdir -p $GITHUB_WORKSPACE/ndk-wrappers
+          ln -sf $NDK_TOOLCHAIN_BIN/clang $GITHUB_WORKSPACE/ndk-wrappers/clang
+          ln -sf $NDK_TOOLCHAIN_BIN/clang++ $GITHUB_WORKSPACE/ndk-wrappers/clang++
           ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang $GITHUB_WORKSPACE/ndk-wrappers/gcc
           ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $GITHUB_WORKSPACE/ndk-wrappers/g++
           ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang $GITHUB_WORKSPACE/ndk-wrappers/cc
