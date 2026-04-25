@@ -55,6 +55,8 @@ jobs:
           subdir = openssl-3.0.15
           EOF
           sed -i 's/\["linux-x86_64"\] if not self.build_opts.is_arm() else \["linux-aarch64"\]/\["android-arm64"\]/' ./build/fbcode_builder/getdeps/builder.py
+          sed -i '/libunwind/d' ./build/fbcode_builder/manifests/folly
+          sed -i '/\[cmake.defines\]/a CMAKE_DISABLE_FIND_PACKAGE_LibUnwind=TRUE' ./build/fbcode_builder/manifests/folly
 
       - name: Build Watchman (Android ARM64)
         run: |
