@@ -63,6 +63,8 @@ jobs:
           sed -i '/fbthrift/d' ./build/fbcode_builder/manifests/edencommon
           sed -i '/fb303/d' ./build/fbcode_builder/manifests/edencommon
           sed -i '/\[dependencies\]/a googletest' ./build/fbcode_builder/manifests/edencommon
+          sed -i '/fb303::fb303/d' CMakeLists.txt
+          sed -i '/edencommon::edencommon_telemetry/d' CMakeLists.txt
 
       - name: Build Watchman (Android ARM64)
         run: |
