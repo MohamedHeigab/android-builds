@@ -102,28 +102,19 @@ jobs:
           sed -i 's/__fsword_t/decltype(sfs.f_type)/g' watchman/fs/FSDetect.cpp
           sed -i 's/facebook::fb303::ServiceData::get()->getQuantileStatMap()->flushAll();/\/\/ facebook::fb303::ServiceData::get()->getQuantileStatMap()->flushAll();/g' watchman/telemetry/WatchmanStats.cpp
 
-          cat << 'EOF' > patch_builder.py
-import sys
-with open(sys.argv[1], 'r') as f:
-    content = f.read()
-target = """                self._check_cmd(
-                    [bootstrap, "--prefix=%s" % self.inst_dir] + bootstrap_args,
-                    cwd=self.src_dir,
-                    env=env,
-                )"""
-replacement = """                self._check_cmd(
-                    [bootstrap, "--prefix=%s" % self.inst_dir] + bootstrap_args,
-                    cwd=self.src_dir,
-                    env={**env, "CC": "/usr/bin/gcc", "CXX": "/usr/bin/g++"},
-                )"""
-if target in content:
-    with open(sys.argv[1], 'w') as f:
-        f.write(content.replace(target, replacement))
-else:
-    print("Could not find target to replace in builder.py")
-    sys.exit(1)
-EOF
-          python3 patch_builder.py ./build/fbcode_builder/getdeps/builder.py
+          python3 -c '
+          import sys
+          with open(sys.argv[1], "r") as f:
+              content = f.read()
+          target = "                self._check_cmd(\n                    [bootstrap, \"--prefix=%s\" % self.inst_dir] + bootstrap_args,\n                    cwd=self.src_dir,\n                    env=env,\n                )"
+          replacement = "                self._check_cmd(\n                    [bootstrap, \"--prefix=%s\" % self.inst_dir] + bootstrap_args,\n                    cwd=self.src_dir,\n                    env={**env, \"CC\": \"/usr/bin/gcc\", \"CXX\": \"/usr/bin/g++\"},\n                )"
+          if target in content:
+              with open(sys.argv[1], "w") as f:
+                  f.write(content.replace(target, replacement))
+          else:
+              print("Could not find target to replace in builder.py")
+              sys.exit(1)
+          ' ./build/fbcode_builder/getdeps/builder.py
 
       - name: Build Watchman (Android ARM64)
         run: |
