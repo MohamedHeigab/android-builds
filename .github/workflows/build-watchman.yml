@@ -42,6 +42,15 @@ jobs:
           sudo ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $NDK_TOOLCHAIN_BIN/aarch64-linux-android-clang++
           sudo ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $NDK_TOOLCHAIN_BIN/aarch64-linux-android-g++
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
+
+          mkdir -p $GITHUB_WORKSPACE/ndk-wrappers
+          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang $GITHUB_WORKSPACE/ndk-wrappers/gcc
+          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $GITHUB_WORKSPACE/ndk-wrappers/g++
+          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang $GITHUB_WORKSPACE/ndk-wrappers/cc
+          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $GITHUB_WORKSPACE/ndk-wrappers/c++
+          ln -sf $NDK_TOOLCHAIN_BIN/llvm-ar $GITHUB_WORKSPACE/ndk-wrappers/ar
+          ln -sf $NDK_TOOLCHAIN_BIN/llvm-ranlib $GITHUB_WORKSPACE/ndk-wrappers/ranlib
+          echo "$GITHUB_WORKSPACE/ndk-wrappers" >> $GITHUB_PATH
           ar rcs libicudata.a
           ar rcs libicui18n.a
           ar rcs libicuuc.a
