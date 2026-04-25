@@ -77,7 +77,6 @@ jobs:
             --extra-b2-args=cflags=-fPIC \
             --extra-b2-args=-sHAVE_ICU=0 \
             --extra-b2-args=boost.locale.icu=off \
-            --extra-b2-args=disable-icu \
             --allow-system-packages
             
           # Find and strip the built watchman binary
