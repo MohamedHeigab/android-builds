@@ -65,6 +65,7 @@ jobs:
           sed -i '/\[dependencies\]/a googletest' ./build/fbcode_builder/manifests/edencommon
           sed -i '/fb303::fb303/d' CMakeLists.txt
           sed -i '/edencommon::edencommon_telemetry/d' CMakeLists.txt
+          sed -i '/find_package(Boost/a set_property(TARGET Boost::regex PROPERTY INTERFACE_LINK_LIBRARIES "")' CMakeLists.txt
           sed -i 's/__fsword_t/decltype(sfs.f_type)/g' watchman/fs/FSDetect.cpp
           sed -i 's/facebook::fb303::ServiceData::get()->getQuantileStatMap()->flushAll();/\/\/ facebook::fb303::ServiceData::get()->getQuantileStatMap()->flushAll();/g' watchman/telemetry/WatchmanStats.cpp
 
