@@ -44,14 +44,30 @@ jobs:
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
           mkdir -p $GITHUB_WORKSPACE/ndk-wrappers
-          ln -sf $NDK_TOOLCHAIN_BIN/clang $GITHUB_WORKSPACE/ndk-wrappers/clang
-          ln -sf $NDK_TOOLCHAIN_BIN/clang++ $GITHUB_WORKSPACE/ndk-wrappers/clang++
-          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang $GITHUB_WORKSPACE/ndk-wrappers/gcc
-          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $GITHUB_WORKSPACE/ndk-wrappers/g++
-          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang $GITHUB_WORKSPACE/ndk-wrappers/cc
-          ln -sf $NDK_TOOLCHAIN_BIN/aarch64-linux-android28-clang++ $GITHUB_WORKSPACE/ndk-wrappers/c++
-          ln -sf $NDK_TOOLCHAIN_BIN/llvm-ar $GITHUB_WORKSPACE/ndk-wrappers/ar
-          ln -sf $NDK_TOOLCHAIN_BIN/llvm-ranlib $GITHUB_WORKSPACE/ndk-wrappers/ranlib
+          echo '#!/bin/bash' > $GITHUB_WORKSPACE/ndk-wrappers/gcc
+          echo 'exec '$NDK_TOOLCHAIN_BIN'/aarch64-linux-android28-clang "$@"' >> $GITHUB_WORKSPACE/ndk-wrappers/gcc
+          chmod +x $GITHUB_WORKSPACE/ndk-wrappers/gcc
+
+          echo '#!/bin/bash' > $GITHUB_WORKSPACE/ndk-wrappers/g++
+          echo 'exec '$NDK_TOOLCHAIN_BIN'/aarch64-linux-android28-clang++ "$@"' >> $GITHUB_WORKSPACE/ndk-wrappers/g++
+          chmod +x $GITHUB_WORKSPACE/ndk-wrappers/g++
+
+          echo '#!/bin/bash' > $GITHUB_WORKSPACE/ndk-wrappers/cc
+          echo 'exec '$NDK_TOOLCHAIN_BIN'/aarch64-linux-android28-clang "$@"' >> $GITHUB_WORKSPACE/ndk-wrappers/cc
+          chmod +x $GITHUB_WORKSPACE/ndk-wrappers/cc
+
+          echo '#!/bin/bash' > $GITHUB_WORKSPACE/ndk-wrappers/c++
+          echo 'exec '$NDK_TOOLCHAIN_BIN'/aarch64-linux-android28-clang++ "$@"' >> $GITHUB_WORKSPACE/ndk-wrappers/c++
+          chmod +x $GITHUB_WORKSPACE/ndk-wrappers/c++
+
+          echo '#!/bin/bash' > $GITHUB_WORKSPACE/ndk-wrappers/ar
+          echo 'exec '$NDK_TOOLCHAIN_BIN'/llvm-ar "$@"' >> $GITHUB_WORKSPACE/ndk-wrappers/ar
+          chmod +x $GITHUB_WORKSPACE/ndk-wrappers/ar
+
+          echo '#!/bin/bash' > $GITHUB_WORKSPACE/ndk-wrappers/ranlib
+          echo 'exec '$NDK_TOOLCHAIN_BIN'/llvm-ranlib "$@"' >> $GITHUB_WORKSPACE/ndk-wrappers/ranlib
+          chmod +x $GITHUB_WORKSPACE/ndk-wrappers/ranlib
+
           echo "$GITHUB_WORKSPACE/ndk-wrappers" >> $GITHUB_PATH
           ar rcs libicudata.a
           ar rcs libicui18n.a
