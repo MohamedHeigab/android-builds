@@ -26,11 +26,13 @@ jobs:
       - name: Build Watchman in ARM64 container
         run: |
           docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace ubuntu:22.04 /bin/bash -c "
+            set -e
             export DEBIAN_FRONTEND=noninteractive
             apt-get update
             apt-get install -y curl git build-essential cmake python3 python3-dev pkg-config \
-                               libssl-dev libfmt-dev libgflags-dev libglog-dev libboost-all-dev \
-                               libevent-dev libsnappy-dev libzstd-dev liblz4-dev libsodium-dev
+                               libssl-dev libfmt-dev libgflags-dev libgoogle-glog-dev libboost-all-dev \
+                               libevent-dev libsnappy-dev libzstd-dev liblz4-dev libsodium-dev \
+                               libdouble-conversion-dev
                                
             # Install Rust
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
