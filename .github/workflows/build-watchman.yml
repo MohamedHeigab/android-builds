@@ -1,0 +1,72 @@
+name: Build Watchman for aarch64 glibc (grunner/termux)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+  schedule:
+    - cron: '0 0 * * 0' # Automatically run once a week
+
+jobs:
+  build:
+    name: Compile Watchman (aarch64-linux-gnu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for ARM64 emulation
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build Watchman in ARM64 container
+        run: |
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace ubuntu:22.04 /bin/bash -c "
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y curl git build-essential cmake python3 python3-dev pkg-config \
+                               libssl-dev libfmt-dev libgflags-dev libglog-dev libboost-all-dev \
+                               libevent-dev libsnappy-dev libzstd-dev liblz4-dev libsodium-dev
+                               
+            # Install Rust
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            export PATH=\"\$HOME/.cargo/bin:\$PATH\"
+            
+            # Clone Watchman
+            git clone https://github.com/facebook/watchman.git /watchman-src
+            cd /watchman-src
+            
+            # Patch hardcoded paths that may fail on Termux / Android
+            # Re-route /var/run and /tmp to Termux prefix
+            find . -type f -name '*.cpp' -o -name '*.h' -o -name '*.rs' | xargs sed -i 's|/var/run/watchman|/data/data/com.termux/files/usr/var/run/watchman|g'
+            find . -type f -name '*.cpp' -o -name '*.h' -o -name '*.rs' | xargs sed -i 's|/usr/local/var/run/watchman|/data/data/com.termux/files/usr/var/run/watchman|g'
+            find . -type f -name '*.cpp' -o -name '*.h' -o -name '*.rs' | xargs sed -i 's|\"/tmp|\"/data/data/com.termux/files/usr/tmp|g'
+            
+            # Configure Watchman build
+            cmake -S . -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWATCHMAN_STATE_DIR=/data/data/com.termux/files/usr/var/run/watchman \
+              -DENABLE_EDEN_SUPPORT=OFF \
+              -DBUILD_SHARED_LIBS=OFF
+              
+            # Build using all available cores
+            cmake --build build -j\$(nproc)
+            
+            # Strip debug symbols to reduce binary size
+            strip build/watchman
+            
+            # Copy artifact to the workspace
+            mkdir -p /workspace/artifacts
+            cp build/watchman /workspace/artifacts/watchman-aarch64-glibc
+          "
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchman-aarch64-glibc-termux
+          path: artifacts/watchman-aarch64-glibc
+          if-no-files-found: error
