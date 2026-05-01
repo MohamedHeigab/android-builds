@@ -32,7 +32,7 @@ jobs:
             apt-get install -y curl git build-essential cmake python3 python3-dev pkg-config \
                                libssl-dev libfmt-dev libgflags-dev libgoogle-glog-dev libboost-all-dev \
                                libevent-dev libsnappy-dev libzstd-dev liblz4-dev libsodium-dev \
-                               libdouble-conversion-dev
+                               libdouble-conversion-dev libgmock-dev libgtest-dev
                                
             # Install Rust
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
