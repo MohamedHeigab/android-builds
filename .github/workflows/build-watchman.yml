@@ -50,8 +50,8 @@ jobs:
             # Force getdeps.py to build these statically from source by removing the system dynamic libraries
             apt-get remove -y libglog-dev libgflags-dev libsnappy-dev libevent-dev libzstd-dev liblz4-dev libdouble-conversion-dev libfmt-dev libsodium-dev libunwind-dev || true
             
-            # Build Watchman and all its dependencies
-            python3 build/fbcode_builder/getdeps.py build --no-tests watchman
+            # Build Watchman and all its dependencies statically
+            python3 build/fbcode_builder/getdeps.py build --no-tests --extra-cmake-defines '{"BUILD_SHARED_LIBS": "OFF"}' watchman
             
             # The binary is placed deep in a tmp directory by getdeps, copy it out
             mkdir -p ../artifacts
