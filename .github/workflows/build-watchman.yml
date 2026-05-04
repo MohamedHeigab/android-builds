@@ -51,7 +51,7 @@ jobs:
             apt-get remove -y libglog-dev libgflags-dev libsnappy-dev libevent-dev libzstd-dev liblz4-dev libdouble-conversion-dev libfmt-dev libsodium-dev libunwind-dev || true
             
             # Build Watchman and all its dependencies statically
-            python3 build/fbcode_builder/getdeps.py build --no-tests --extra-cmake-defines '{\"BUILD_SHARED_LIBS\": \"OFF\"}' watchman
+            python3 build/fbcode_builder/getdeps.py build --no-tests --extra-cmake-defines '{\"BUILD_SHARED_LIBS\": \"OFF\", \"WATCHMAN_STATE_DIR\": \"/data/data/com.termux/files/usr/var/run/watchman\"}' watchman
             
             # The binary is placed deep in a tmp directory by getdeps, copy it out
             mkdir -p ../artifacts
