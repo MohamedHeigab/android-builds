@@ -50,9 +50,9 @@ jobs:
             # Build Watchman and all its dependencies
             python3 build/fbcode_builder/getdeps.py build --no-tests watchman
             
-            # The binary is placed deep in the _build directory, copy it out
+            # The binary is placed deep in a tmp directory by getdeps, copy it out
             mkdir -p ../artifacts
-            find /workspace/watchman-src/_build/ -name watchman -type f -executable -exec cp {} ../artifacts/watchman-aarch64-glibc \;
+            find /tmp -path "*/installed/watchman/bin/watchman" -type f -executable -exec cp {} ../artifacts/watchman-aarch64-glibc \;
             
             # Strip debug symbols to reduce size
             strip ../artifacts/watchman-aarch64-glibc
