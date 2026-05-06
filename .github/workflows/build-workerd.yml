@@ -22,57 +22,59 @@ jobs:
 
       - name: Cross-compile workerd in Docker
         run: |
-          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace ubuntu:22.04 /bin/bash -c "
-            set -e
-            export DEBIAN_FRONTEND=noninteractive
-            
-            apt-get update
-            apt-get install -y curl git build-essential python3 python3-distutils python3-setuptools tcl8.6 sudo wget gnupg software-properties-common lsb-release rsync
+          cat << 'EOF' > build.sh
+          set -e
+          export DEBIAN_FRONTEND=noninteractive
+          
+          apt-get update
+          apt-get install -y curl git build-essential python3 python3-distutils python3-setuptools tcl8.6 sudo wget gnupg software-properties-common lsb-release rsync
 
-            # Install Clang 19
-            wget https://apt.llvm.org/llvm.sh
-            chmod +x llvm.sh
-            ./llvm.sh 19
-            apt-get install -y libc++-19-dev libc++abi-19-dev lld-19
-            
-            # Install bazelisk
-            wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-arm64 -O /usr/local/bin/bazel
-            chmod +x /usr/local/bin/bazel
-            
-            cd /workspace
-            
-            # Clone workerd
-            if [ ! -d "workerd-src" ]; then
-              git clone https://github.com/cloudflare/workerd.git workerd-src
-            fi
-            cd workerd-src
-            
-            # Fetch all bazel dependencies first so we can patch them
-            bazel fetch //src/workerd/server:workerd
-            
-            # Make external dependencies writable
-            chmod -R +w $(bazel info output_base)/external
-            
-            # Patch hardcoded /tmp, /usr/local, and /etc paths for Termux in workerd source and dependencies
-            for dir in . $(bazel info output_base)/external; do
-              find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i 's|"/tmp|"/data/data/com.termux/files/usr/tmp|g' {} +
-              find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/tmp|'/data/data/com.termux/files/usr/tmp|g" {} +
-              find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i 's|"/etc/resolv.conf"|"/data/data/com.termux/files/usr/etc/resolv.conf"|g' {} +
-              find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i 's|"/etc/hosts"|"/data/data/com.termux/files/usr/etc/hosts"|g' {} +
-            done
-            find . -type f \( -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/usr/local'|'/data/data/com.termux/files/usr/local'|g" {} +
-            find . -type f \( -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/usr/bin/env|'/data/data/com.termux/files/usr/bin/env|g" {} +
-            
-            # Workerd bazel configuration might require explicit repo env for clang
-            bazel build --config=release --repo_env=CC=clang-19 --repo_env=CXX=clang++-19 //src/workerd/server:workerd
-            
-            # Extract artifact
-            mkdir -p ../artifacts
-            cp bazel-bin/src/workerd/server/workerd ../artifacts/workerd-aarch64-glibc
-            
-            # Strip debug symbols
-            strip ../artifacts/workerd-aarch64-glibc
-          "
+          # Install Clang 19
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          ./llvm.sh 19
+          apt-get install -y libc++-19-dev libc++abi-19-dev lld-19
+          
+          # Install bazelisk
+          wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-arm64 -O /usr/local/bin/bazel
+          chmod +x /usr/local/bin/bazel
+          
+          cd /workspace
+          
+          # Clone workerd
+          if [ ! -d "workerd-src" ]; then
+            git clone https://github.com/cloudflare/workerd.git workerd-src
+          fi
+          cd workerd-src
+          
+          # Fetch all bazel dependencies first so we can patch them
+          bazel fetch //src/workerd/server:workerd
+          
+          # Make external dependencies writable
+          chmod -R +w $(bazel info output_base)/external
+          
+          # Patch hardcoded /tmp, /usr/local, and /etc paths for Termux in workerd source and dependencies
+          for dir in . $(bazel info output_base)/external; do
+            find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i 's|"/tmp|"/data/data/com.termux/files/usr/tmp|g' {} +
+            find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/tmp|'/data/data/com.termux/files/usr/tmp|g" {} +
+            find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i 's|"/etc/resolv.conf"|"/data/data/com.termux/files/usr/etc/resolv.conf"|g' {} +
+            find $dir -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.cc' -o -name '*.c++' -o -name '*.ts' -o -name '*.js' \) -exec sed -i 's|"/etc/hosts"|"/data/data/com.termux/files/usr/etc/hosts"|g' {} +
+          done
+          find . -type f \( -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/usr/local'|'/data/data/com.termux/files/usr/local'|g" {} +
+          find . -type f \( -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/usr/bin/env|'/data/data/com.termux/files/usr/bin/env|g" {} +
+          
+          # Workerd bazel configuration might require explicit repo env for clang
+          bazel build --config=release --repo_env=CC=clang-19 --repo_env=CXX=clang++-19 //src/workerd/server:workerd
+          
+          # Extract artifact
+          mkdir -p ../artifacts
+          cp bazel-bin/src/workerd/server/workerd ../artifacts/workerd-aarch64-glibc
+          
+          # Strip debug symbols
+          strip ../artifacts/workerd-aarch64-glibc
+          EOF
+          
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace ubuntu:22.04 /bin/bash /workspace/build.sh
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
