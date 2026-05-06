@@ -66,7 +66,7 @@ jobs:
           find . -type f \( -name '*.ts' -o -name '*.js' \) -exec sed -i "s|'/usr/bin/env|'/data/data/com.termux/files/usr/bin/env|g" {} +
           
           # Workerd bazel configuration might require explicit repo env for clang
-          bazel build --config=release --repo_env=CC=clang-19 --repo_env=CXX=clang++-19 //src/workerd/server:workerd
+          bazel build --config=release --repo_env=CC=clang-19 --repo_env=CXX=clang++-19 --@workerd//src/workerd/server:use_tcmalloc=False //src/workerd/server:workerd
           
           # Extract artifact
           mkdir -p ../artifacts
