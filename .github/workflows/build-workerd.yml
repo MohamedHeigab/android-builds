@@ -48,7 +48,9 @@ jobs:
           cd workerd-src
           
           # Fetch all bazel dependencies first so we can patch them
-          bazel fetch //src/workerd/server:workerd
+          export CC=clang-19
+          export CXX=clang++-19
+          bazel fetch --repo_env=CC=clang-19 --repo_env=CXX=clang++-19 //src/workerd/server:workerd
           
           # Make external dependencies writable
           chmod -R +w $(bazel info output_base)/external
