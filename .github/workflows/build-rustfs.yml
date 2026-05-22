@@ -50,10 +50,21 @@ jobs:
           sed -i 's/"rustls"/"native-tls-vendored"/g' Cargo.toml
           sed -i 's/"reqwest-rustls"/"reqwest-client"/g' Cargo.toml
 
+      - name: Download console static assets
+        run: |
+          mkdir -p rustfs/static
+          curl --fail -L "https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip" -o console.zip --retry 3 --retry-delay 5 --max-time 300
+          unzip -o console.zip -d rustfs/static
+          rm console.zip
+
       - name: Build RustFS
         run: |
           cargo build --release --target aarch64-linux-android
+        env:
+          RUSTFLAGS: "--cfg tokio_unstable"
           
+      - name: Strip debug symbols
+        run: |
           # Strip debug symbols to drastically reduce the binary size
           $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip target/aarch64-linux-android/release/rustfs
           
