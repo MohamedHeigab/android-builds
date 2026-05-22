@@ -45,9 +45,9 @@ jobs:
 
       - name: Patch Cargo.toml for Android CLI compatibility
         run: |
-          # Replace 'rustls' with 'native-tls-vendored' to avoid 'rustls-platform-verifier'
+          # Replace 'rustls' with 'native-tls-vendored' for reqwest to avoid 'rustls-platform-verifier'
           # which panics on Android when run without a JNI context (e.g. in Termux).
-          sed -i 's/"rustls"/"native-tls-vendored"/g' Cargo.toml
+          sed -i '/reqwest =/ s/"rustls"/"native-tls-vendored"/g' Cargo.toml
           sed -i 's/"reqwest-rustls"/"reqwest-client"/g' Cargo.toml
 
       - name: Download console static assets
