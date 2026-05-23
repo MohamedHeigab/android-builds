@@ -49,6 +49,9 @@ jobs:
           # which panics on Android when run without a JNI context (e.g. in Termux).
           sed -i '/reqwest =/ s/"rustls"/"native-tls-vendored"/g' Cargo.toml
           sed -i 's/"reqwest-rustls"/"reqwest-client"/g' Cargo.toml
+          
+          # Replace 'rustls' with 'rustls-native-certs' for lapin to fix rustls-platform-verifier E0599 error on Android
+          sed -i '/lapin =/ s/"rustls"/"rustls-native-certs"/g' Cargo.toml
 
       - name: Download console static assets
         run: |
