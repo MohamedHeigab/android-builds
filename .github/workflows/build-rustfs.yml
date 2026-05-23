@@ -43,6 +43,9 @@ jobs:
           # Add the NDK bin directory to the PATH so build scripts can find other tools
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
+      - name: Install protobuf-compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - name: Patch Cargo.toml for Android CLI compatibility
         run: |
           # Replace 'rustls' with 'native-tls-vendored' for reqwest to avoid 'rustls-platform-verifier'
