@@ -15,6 +15,8 @@ jobs:
   build:
     name: Compile Watchman (aarch64-linux-gnu)
     runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
 
     steps:
       - name: Get latest commit hash
@@ -87,3 +89,14 @@ jobs:
           name: watchman-aarch64-glibc-termux
           path: artifacts/watchman-aarch64-glibc
           if-no-files-found: error
+
+      - name: Release binary
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Builds
+          body: "This release contains the latest automated builds of all Android tools."
+          files: artifacts/watchman-aarch64-glibc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
