@@ -95,6 +95,9 @@ jobs:
           
           # Strip debug symbols
           strip ../artifacts/workerd-aarch64-glibc
+          
+          # Compress the binary
+          tar -czf ../artifacts/workerd-aarch64-glibc-termux.tar.gz -C ../artifacts workerd-aarch64-glibc
           EOF
           
           docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace ubuntu:22.04 /bin/bash /workspace/build.sh
@@ -104,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: workerd-aarch64-glibc-termux
-          path: artifacts/workerd-aarch64-glibc
+          path: artifacts/workerd-aarch64-glibc-termux.tar.gz
           if-no-files-found: error
 
       - name: Release binary
@@ -114,6 +117,6 @@ jobs:
           tag_name: latest
           name: Latest Builds
           body: "This release contains the latest automated builds of all Android tools."
-          files: artifacts/workerd-aarch64-glibc
+          files: artifacts/workerd-aarch64-glibc-termux.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -66,13 +66,14 @@ jobs:
         run: |
           # The main entrypoint for Terraform providers is usually the root directory
           go build -v -trimpath -ldflags="-s -w" -o terraform-provider-aws-android-arm64 .
+          tar -czf terraform-provider-aws-android-arm64.tar.gz terraform-provider-aws-android-arm64
           
       - name: Upload binary artifact
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: terraform-provider-aws-android-arm64
-          path: terraform-provider-aws-android-arm64
+          path: terraform-provider-aws-android-arm64.tar.gz
           if-no-files-found: error
 
       - name: Release binary
@@ -82,6 +83,6 @@ jobs:
           tag_name: latest
           name: Latest Builds
           body: "This release contains the latest automated builds of all Android tools."
-          files: terraform-provider-aws-android-arm64
+          files: terraform-provider-aws-android-arm64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

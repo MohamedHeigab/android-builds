@@ -80,6 +80,9 @@ jobs:
             
             # Strip debug symbols to reduce size
             strip ../artifacts/watchman-aarch64-glibc
+            
+            # Compress the binary
+            tar -czf ../artifacts/watchman-aarch64-glibc-termux.tar.gz -C ../artifacts watchman-aarch64-glibc
           "
 
       - name: Upload binary artifact
@@ -87,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: watchman-aarch64-glibc-termux
-          path: artifacts/watchman-aarch64-glibc
+          path: artifacts/watchman-aarch64-glibc-termux.tar.gz
           if-no-files-found: error
 
       - name: Release binary
@@ -97,6 +100,6 @@ jobs:
           tag_name: latest
           name: Latest Builds
           body: "This release contains the latest automated builds of all Android tools."
-          files: artifacts/watchman-aarch64-glibc
+          files: artifacts/watchman-aarch64-glibc-termux.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

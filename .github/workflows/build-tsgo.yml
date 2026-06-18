@@ -70,13 +70,14 @@ jobs:
           # -trimpath: removes absolute filesystem paths from the binary
           # -ldflags="-s -w": strips debugging information to reduce binary size
           go build -v -trimpath -ldflags="-s -w" -o tsgo-android-arm64 .
+          tar -czf tsgo-android-arm64.tar.gz tsgo-android-arm64
           
       - name: Upload binary artifact
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tsgo-android-arm64
-          path: cmd/tsgo/tsgo-android-arm64
+          path: cmd/tsgo/tsgo-android-arm64.tar.gz
           if-no-files-found: error
 
       - name: Release binary
@@ -86,6 +87,6 @@ jobs:
           tag_name: latest
           name: Latest Builds
           body: "This release contains the latest automated builds of all Android tools."
-          files: cmd/tsgo/tsgo-android-arm64
+          files: cmd/tsgo/tsgo-android-arm64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
