@@ -42,6 +42,12 @@ jobs:
         with:
           repository: microsoft/typescript-go
           
+      - name: Patch fanotify to disable on Android
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sed -i 's|//go:build linux|//go:build linux \&\& !android|' internal/fswatch/fanotify_linux.go
+          sed -i 's|//go:build linux|//go:build linux \&\& !android|' internal/fswatch/fanotify_linux_test.go
+
       - name: Set up Go
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
