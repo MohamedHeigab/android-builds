@@ -9,7 +9,7 @@ on:
       - main
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 * * *'
 
 jobs:
   build:
@@ -17,10 +17,29 @@ jobs:
     runs-on: ubuntu-24.04-arm
 
     steps:
+      - name: Get latest commit hash
+        id: get-commit
+        run: |
+          hash=$(git ls-remote https://github.com/cloudflare/workerd.git HEAD | awk '{print $1}')
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+
+      - name: Restore build cache status
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: last-built-commit.txt
+          key: cache-${{ github.workflow }}-${{ hashFiles('.github/workflows/build-workerd.yml') }}-${{ steps.get-commit.outputs.hash }}
+
+      - name: Create commit file on miss
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "${{ steps.get-commit.outputs.hash }}" > last-built-commit.txt
+
       - name: Checkout repository
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
 
       - name: Cross-compile workerd in Docker
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           cat << 'EOF' > build.sh
           set -e
@@ -79,6 +98,7 @@ jobs:
           docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace ubuntu:22.04 /bin/bash /workspace/build.sh
 
       - name: Upload binary artifact
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: workerd-aarch64-glibc-termux

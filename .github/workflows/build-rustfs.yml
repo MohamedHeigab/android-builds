@@ -9,7 +9,7 @@ on:
       - main
   workflow_dispatch: # Allows manual trigger from the Actions tab
   schedule:
-    - cron: '0 0 * * 0' # Automatically run once a week
+    - cron: '0 0 * * *' # Automatically run daily
 
 jobs:
   build:
@@ -17,17 +17,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get latest commit hash
+        id: get-commit
+        run: |
+          hash=$(git ls-remote https://github.com/rustfs/rustfs.git HEAD | awk '{print $1}')
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+
+      - name: Restore build cache status
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: last-built-commit.txt
+          key: cache-${{ github.workflow }}-${{ hashFiles('.github/workflows/build-rustfs.yml') }}-${{ steps.get-commit.outputs.hash }}
+
+      - name: Create commit file on miss
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "${{ steps.get-commit.outputs.hash }}" > last-built-commit.txt
+
       - name: Checkout RustFS repository
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
           repository: rustfs/rustfs
           
       - name: Set up Rust
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
 
       - name: Configure Android NDK toolchain
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           # Use the pre-installed NDK on GitHub-hosted Ubuntu runners
           NDK_TOOLCHAIN_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
@@ -44,9 +64,11 @@ jobs:
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
       - name: Install protobuf-compiler
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Patch Cargo.toml for Android CLI compatibility
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           # Replace 'rustls' with 'native-tls-vendored' for reqwest to avoid 'rustls-platform-verifier'
           # which panics on Android when run without a JNI context (e.g. in Termux).
@@ -57,6 +79,7 @@ jobs:
           sed -i '/lapin =/ s/"rustls"/"rustls-native-certs"/g' Cargo.toml
 
       - name: Download console static assets
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p rustfs/static
           curl --fail -L "https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip" -o console.zip --retry 3 --retry-delay 5 --max-time 300
@@ -64,17 +87,20 @@ jobs:
           rm console.zip
 
       - name: Build RustFS
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           cargo build --release --target aarch64-linux-android
         env:
           RUSTFLAGS: "--cfg tokio_unstable"
           
       - name: Strip debug symbols
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           # Strip debug symbols to drastically reduce the binary size
           $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip target/aarch64-linux-android/release/rustfs
           
       - name: Upload binary artifact
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: rustfs-android-arm64

@@ -9,7 +9,7 @@ on:
       - main
   workflow_dispatch: # Allows manual trigger from the Actions tab
   schedule:
-    - cron: '0 0 * * 0' # Automatically run once a week
+    - cron: '0 0 * * *' # Automatically run daily
 
 jobs:
   build:
@@ -17,24 +17,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get latest commit hash
+        id: get-commit
+        run: |
+          hash=$(git ls-remote https://github.com/hashicorp/terraform-provider-aws.git HEAD | awk '{print $1}')
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+
+      - name: Restore build cache status
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: last-built-commit.txt
+          key: cache-${{ github.workflow }}-${{ hashFiles('.github/workflows/build-terraform-provider-aws.yml') }}-${{ steps.get-commit.outputs.hash }}
+
+      - name: Create commit file on miss
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "${{ steps.get-commit.outputs.hash }}" > last-built-commit.txt
+
       - name: Checkout Terraform Provider AWS repository
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
           repository: hashicorp/terraform-provider-aws
           
       - name: Set up Go
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
           go-version: 'stable' # The AWS provider uses newer Go versions, stable is best
           check-latest: true
 
       - name: Configure Android NDK toolchain
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           # Use the pre-installed NDK on GitHub-hosted Ubuntu runners
           NDK_TOOLCHAIN_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
       - name: Build Terraform Provider AWS
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         env:
           CGO_ENABLED: 1
           GOOS: android
@@ -45,6 +66,7 @@ jobs:
           go build -v -trimpath -ldflags="-s -w" -o terraform-provider-aws-android-arm64 .
           
       - name: Upload binary artifact
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: terraform-provider-aws-android-arm64

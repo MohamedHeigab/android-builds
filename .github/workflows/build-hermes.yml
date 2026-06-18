@@ -9,7 +9,7 @@ on:
       - main
   workflow_dispatch: # Allows manual trigger from the Actions tab
   schedule:
-    - cron: '0 0 * * 0' # Automatically run once a week to stay up to date
+    - cron: '0 0 * * *' # Automatically run daily to stay up to date
 
 jobs:
   build:
@@ -17,18 +17,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get latest commit hash
+        id: get-commit
+        run: |
+          hash=$(git ls-remote https://github.com/facebook/hermes.git refs/heads/static_h | awk '{print $1}')
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+
+      - name: Restore build cache status
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: last-built-commit.txt
+          key: cache-${{ github.workflow }}-${{ hashFiles('.github/workflows/build-hermes.yml') }}-${{ steps.get-commit.outputs.hash }}
+
+      - name: Create commit file on miss
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "${{ steps.get-commit.outputs.hash }}" > last-built-commit.txt
+
       - name: Checkout Hermes repository
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
           repository: facebook/hermes
           ref: static_h
           
       - name: Install host dependencies
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake git ninja-build python3 libicu-dev libreadline-dev
 
       - name: Build Hermes (Host)
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           # A host build is required to generate the ImportHostCompilers.cmake file
           # which is necessary for compiling InternalBytecode when cross-compiling.
@@ -36,6 +56,7 @@ jobs:
           cmake --build ./build_host
 
       - name: Build Hermes (Android ARM64)
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           cmake -S . -B build_android \
             -DHERMES_FACEBOOK_BUILD=OFF \
@@ -53,6 +74,7 @@ jobs:
           find build_android/bin -maxdepth 1 -type f -executable -exec sh -c '$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip "$1" || true' _ {} \;
           
       - name: Upload binary artifact
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: hermes-android-arm64

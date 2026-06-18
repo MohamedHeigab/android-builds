@@ -9,7 +9,7 @@ on:
       - main
   workflow_dispatch: # Allows manual trigger from the Actions tab
   schedule:
-    - cron: '0 0 * * 0' # Automatically run once a week to stay up to date
+    - cron: '0 0 * * *' # Automatically run daily to stay up to date
 
 jobs:
   build:
@@ -17,18 +17,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get latest commit hash
+        id: get-commit
+        run: |
+          hash=$(git ls-remote https://github.com/microsoft/typescript-go.git HEAD | awk '{print $1}')
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+
+      - name: Restore build cache status
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: last-built-commit.txt
+          key: cache-${{ github.workflow }}-${{ hashFiles('.github/workflows/build-tsgo.yml') }}-${{ steps.get-commit.outputs.hash }}
+
+      - name: Create commit file on miss
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "${{ steps.get-commit.outputs.hash }}" > last-built-commit.txt
+
       - name: Checkout typescript-go repository
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
           repository: microsoft/typescript-go
           
       - name: Set up Go
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
           check-latest: true
 
       - name: Configure Android NDK toolchain
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
           # Use the pre-installed NDK on GitHub-hosted Ubuntu runners.
           # This avoids the slow process of downloading and extracting the 1GB+ NDK.
@@ -36,6 +56,7 @@ jobs:
           echo "$NDK_TOOLCHAIN_BIN" >> $GITHUB_PATH
 
       - name: Build tsgo
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         working-directory: cmd/tsgo
         env:
           CGO_ENABLED: 1
@@ -49,6 +70,7 @@ jobs:
           go build -v -trimpath -ldflags="-s -w" -o tsgo-android-arm64 .
           
       - name: Upload binary artifact
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tsgo-android-arm64
