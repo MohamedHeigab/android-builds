@@ -1,0 +1,87 @@
+name: Build Unison for Android ARM64
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+  schedule:
+    - cron: '0 0 * * *' # Automatically run daily
+
+jobs:
+  build:
+    name: Compile Unison for Android (ARM64)
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
+
+    steps:
+      - name: Get latest commit hash
+        id: get-commit
+        run: |
+          hash=$(git ls-remote https://github.com/bcpierce00/unison.git HEAD | awk '{print $1}')
+          echo "hash=$hash" >> $GITHUB_OUTPUT
+
+      - name: Restore build cache status
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: last-built-commit.txt
+          key: cache-${{ github.workflow }}-${{ hashFiles('.github/workflows/build-unison.yml') }}-${{ steps.get-commit.outputs.hash }}
+
+      - name: Create commit file on miss
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "${{ steps.get-commit.outputs.hash }}" > last-built-commit.txt
+
+      - name: Checkout Unison repository
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: bcpierce00/unison
+
+      - name: Set up OCaml
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 4.14.x
+
+      - name: Install dependencies
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build Unison
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        run: |
+          opam exec -- make UISTYLE=text NATIVE=true STATIC=true
+          
+          # Compress the binary
+          # Note: unison-fsmonitor is also built by default in newer versions, try to include it if exists
+          if [ -f src/unison-fsmonitor ]; then
+            tar -czf unison-android-arm64.tar.gz -C src unison unison-fsmonitor
+          else
+            tar -czf unison-android-arm64.tar.gz -C src unison
+          fi
+
+      - name: Upload binary artifact
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unison-android-arm64
+          path: unison-android-arm64.tar.gz
+          if-no-files-found: error
+
+      - name: Release binary
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Builds
+          body: "This release contains the latest automated builds of all Android tools."
+          files: unison-android-arm64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
