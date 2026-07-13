@@ -57,7 +57,7 @@ jobs:
       - name: Build Unison
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
-          opam exec -- make UISTYLE=text NATIVE=true LDFLAGS=-static
+          opam exec -- make tui fsmonitor NATIVE=true LDFLAGS=-static
           
           # Compress the binary
           # Note: unison-fsmonitor is also built by default in newer versions, try to include it if exists
