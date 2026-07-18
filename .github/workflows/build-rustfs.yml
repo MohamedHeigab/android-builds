@@ -77,9 +77,11 @@ jobs:
           find . -name Cargo.toml -exec sed -i '/reqwest =/ s/"rustls"/"native-tls-vendored"/g' {} +
           find . -name Cargo.toml -exec sed -i 's/"reqwest-rustls"/"reqwest-client"/g' {} +
           
-          # Replace 'rustls' with 'rustls-native-certs' for lapin to fix rustls-platform-verifier E0599 error on Android
-          find . -name Cargo.toml -exec sed -i '/lapin =/ s/"rustls"/"rustls-native-certs"/g' {} +
-          find . -name Cargo.toml -exec sed -i '/lapin =/ s/"rustls-native-certs--aws_lc_rs"/"rustls--aws_lc_rs"/g' {} +
+          # Replace 'rustls' with 'native-tls' for lapin to fix rustls-platform-verifier E0599 error on Android
+          find . -name Cargo.toml -exec sed -i '/lapin =/ s/features = \[.*\]/features = ["tokio", "native-tls"]/g' {} +
+          
+          # Fix RUSAGE_THREAD compilation error on Android
+          find crates -name local.rs -exec sed -i 's/target_os = "android"/target_os = "none"/g' {} +
 
       - name: Download console static assets
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
