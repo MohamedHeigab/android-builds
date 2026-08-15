@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - master
   pull_request:
     branches:
       - main
+      - master
   workflow_dispatch: # Allows manual trigger from the Actions tab
   schedule:
     - cron: '0 0 * * *' # Automatically run daily
@@ -72,13 +74,12 @@ jobs:
       - name: Patch Cargo.toml for Android CLI compatibility
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
-          # Replace 'rustls' with 'native-tls-vendored' for reqwest to avoid 'rustls-platform-verifier'
-          # which panics on Android when run without a JNI context (e.g. in Termux).
-          find . -name Cargo.toml -exec sed -i '/reqwest =/ s/"rustls"/"native-tls-vendored"/g' {} +
+          # Fix opentelemetry-otlp reqwest feature
           find . -name Cargo.toml -exec sed -i 's/"reqwest-rustls"/"reqwest-client"/g' {} +
           
-          # Replace 'rustls' with 'native-tls' for lapin to fix rustls-platform-verifier E0599 error on Android
-          find . -name Cargo.toml -exec sed -i '/lapin =/ s/features = \[.*\]/features = ["tokio", "native-tls"]/g' {} +
+          # Configure lapin to use rustls with webpki-roots-certs to avoid rustls-platform-verifier on Android
+          # and avoid pulling in native-tls/openssl-sys which fails to cross-compile for Android without OpenSSL
+          find . -name Cargo.toml -exec sed -i '/lapin =/ s/features = \[.*\]/features = ["tokio", "rustls", "rustls--aws_lc_rs", "rustls-webpki-roots-certs"]/g' {} +
           
           # Fix RUSAGE_THREAD compilation error on Android
           find crates -name local.rs -exec sed -i 's/target_os = "android"/target_os = "none"/g' {} +
