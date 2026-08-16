@@ -74,6 +74,8 @@ jobs:
       - name: Increase swap space
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
           sudo fallocate -l 10G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=10240
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
