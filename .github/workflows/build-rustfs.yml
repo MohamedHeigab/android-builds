@@ -71,6 +71,14 @@ jobs:
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
+      - name: Increase swap space
+        if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo fallocate -l 10G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=10240
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
       - name: Patch Cargo.toml for Android CLI compatibility
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
         run: |
@@ -83,6 +91,10 @@ jobs:
           
           # Fix RUSAGE_THREAD compilation error on Android
           find crates -name local.rs -exec sed -i 's/target_os = "android"/target_os = "none"/g' {} +
+
+          # Optimize release profile to avoid runner OOM (disable thin LTO and split codegen units)
+          sed -i 's/lto = "thin"/lto = "off"/g' Cargo.toml
+          sed -i 's/codegen-units = 1/codegen-units = 16/g' Cargo.toml
 
       - name: Download console static assets
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
@@ -98,6 +110,10 @@ jobs:
           cargo build --release --target aarch64-linux-android
         env:
           RUSTFLAGS: "--cfg tokio_unstable"
+          CARGO_PROFILE_RELEASE_LTO: "false"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+          CARGO_PROFILE_RELEASE_PANIC: "abort"
+          CARGO_BUILD_JOBS: "2"
           
       - name: Strip debug symbols
         if: github.event_name != 'schedule' || steps.cache.outputs.cache-hit != 'true'
